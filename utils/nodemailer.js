@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+/*import nodemailer from 'nodemailer';
 import router from '../routes/authRoutes';
 
 //const user = process.env.ND_USERNAME;
@@ -7,8 +7,8 @@ import router from '../routes/authRoutes';
 const mailTransporter = nodemailer.createTransport({
 	service: 'Gmail',
 	auth: {
-		user: 'ben.afunsho@gmail.com',
-        pass: 'dtytucxfgousjphq'
+		user: 'ND_USERNAME',
+        pass: 'ND_USERNAME'
         
 	}
 });
@@ -33,3 +33,5 @@ mailTransporter.sendMail(mailDetails, function(err, data) {
 });
 
 export default sendMail;
+
+*/

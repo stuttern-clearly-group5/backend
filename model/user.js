@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
-        accountStatus: {
+        /*accountStatus: {
             type: String, 
             enum: ['Pending', 'Active'],
             default: 'Pending'
@@ -29,6 +29,7 @@ const userSchema = new mongoose.Schema(
             type: String, 
             unique: true 
         }
+        */
 
     }, 
     { timestamps: true}

@@ -4,7 +4,7 @@ import errorHandler from "../middleware/error.js";
 import bcrypt from "bcryptjs";
 import jwtGen from "../utils/jwtGen.js";
 import e from "express";
-import sendMail from "../utils/nodemailer.js";
+//import sendMail from "../utils/nodemailer.js";
 
 const register = async (req, res, next) => {
   const { fullname, username, password, email } = req.body;
@@ -26,8 +26,8 @@ const register = async (req, res, next) => {
         username,
         password: bcryptPassword,
         email,
-        verificationStatus,
-        confirmationCode,
+        //verificationStatus,
+        //confirmationCode,
       });
       const token = jwtGen(newUser._id);    
       if (!token) 
@@ -37,11 +37,11 @@ const register = async (req, res, next) => {
         .status(201)
         .json({ message: "User created successfully! Please check your email for the confirmation code", token });
     }
-    mailTransporter.sendMail(
+    /*mailTransporter.sendMail(
       username,
       email,
       confirmationCode
-    );  
+    );*/  
   } catch (error) {
     console.log(error)
     return res.status(400).json(errorHandler(true, "Error Registering"));
