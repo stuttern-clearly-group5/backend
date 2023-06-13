@@ -7,6 +7,7 @@ import mailHandler from "../utils/nodemailer.js";
 import { query } from "express";
 import crypto from "crypto";
 
+
 const register = async (req, res, next) => {
   const { fullname, username, password, email } = req.body;
   try {
@@ -120,8 +121,12 @@ const requestPasswordReset = async (req, res, next) => {
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(403).json({ message: "Email does not exist" });
-    const resetToken = crypto.randomBytes(32).toString("hex");
-
+    const resetToken = otpGenerator.generate(4, {
+      digits: true,
+      lowerCaseAlphabets: false,
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
     const currentDateTime = new Date();
     const oneHourLater = new Date(currentDateTime.getTime() + 60 * 60 * 1000);
 
@@ -133,23 +138,54 @@ const requestPasswordReset = async (req, res, next) => {
       }
     );
 
-    const link = `${clientURL}/passwordReset?token=${resetToken}&id=${user._id}`;
+    //const link = `${process.env.clientURL}/passwordReset?token=${resetToken}&id=${user._id}`;
     const mailDetails = {
-      link,
+      resetToken,
       email: user.email,
       fullname: user.fullname
     };
     mailHandler({ ...mailDetails });
     return res.status(200).json({message: "We sent a message to your email"})
   } catch (error) {
+    console.log(error);
     return res.status(400).json({message: "Error occured while resetting the password"})
   }
 
 
 };
 
-const resetPasword = async (req, res, next) => {
-  const { token, id} = req.params;
-  const { password } = req.body;
+const verifyToken = async (req, res, next) => {
+  const { resetToken } = req.body; 
+  try {
+    const user = await User.findOne({resetToken})
+    if (!user) {
+      return res.status(404).json({message: "User not Found"})
+    }
+    if (new Date().getTime() > user.tokenExpiryTime){
+      return res.status(403).json({message: "Verification Code has expired. Please request for a new verification code"})
+    }
+    return res.status(200).json({message: "Verification Code confirmed"})
+  } catch (error) {
+    return res.status(400).json({message: "Wrong Verification Code"}) 
+  }
 }
-export { register, signin, statusChange, requestPasswordReset, resetPasword };
+
+const resetPasword = async (req, res, next) => {
+  const { password, resetToken } = req.body;
+try {
+  const user = await User.findOne({resetToken})
+  if (!user) {
+    return res.status(404).json({message: "User not Found"})
+  }
+  const saltRound = 10;
+  const salt = await bcrypt.genSalt(saltRound);
+  const bcryptPassword = await bcrypt.hash(password, salt);
+
+  await User.findOneAndUpdate({email: user.email},{password: bcryptPassword})
+  return res.status(200).json({message: "Password Reset Successfully"})
+} catch (error) {
+  console.log(error);
+  return res.status(400).json({message: "Error occured while resetting the password"}) 
+}
+}
+export { register, signin, statusChange, requestPasswordReset, verifyToken, resetPasword };

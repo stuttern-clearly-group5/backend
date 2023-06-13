@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer';
 const user = process.env.ND_USERNAME;
 const pass = process.env.ND_PASSWORD;
 const mailHandler = (params) => {
-	const {username, email, confirmationCode, link, fullname} = params;
+	const {username, email, confirmationCode, resetToken, fullname} = params;
 
 	const mailTransporter = nodemailer.createTransport({
 		service: 'Gmail',
@@ -29,15 +29,15 @@ const mailHandler = (params) => {
 	   };
 	}
 
-	if(link && fullname) {
+	if(resetToken && fullname) {
 		mailDetails = {
 			from: 'No Reply @ Clearly ',
 			to: email,
 			subject: 'Clearly Password assistance',
 			html: `<h1>Password assistance</h1>
 			<h2> Hello ${fullname},</h2>
-			<p> To authenticate, please use the following verifcation link. 
-			<a href="${link}">Click Here</a>
+			<p> To authenticate, please use the following verifcation code. 
+			<br>${resetToken}</p>
 			<p>Don't share this link with anyone. Our customer service team will never ask you for your password, OTP, or banking info. </p
 			<p>We hope to see you again soon.
 			 </p>
