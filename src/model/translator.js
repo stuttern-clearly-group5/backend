@@ -31,7 +31,7 @@ const translatorSchema = new mongoose.Schema(
         },
         resetToken: {
             type: String,
-            required: true,
+        
           },
           
         tokenExpiryTime: {
