@@ -13,6 +13,9 @@
     "type": "git",
     "url": "git+https://github.com/stuttern-clearly-group5/backend.git"
   },
+  "engines": {
+    "node": ">=14.20.1"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
