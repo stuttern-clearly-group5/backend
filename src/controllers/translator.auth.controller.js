@@ -1,4 +1,4 @@
-import Translator from "../model/Translator.js";
+import Translator from "../model/translator.js";
 //import errorHandler from "../middleware/error.js";
 import bcrypt from "bcryptjs";
 import jwtGen from "../utils/jwtGen.js";

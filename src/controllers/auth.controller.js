@@ -4,8 +4,7 @@ import bcrypt from "bcryptjs";
 import jwtGen from "../utils/jwtGen.js";
 import otpGenerator from "otp-generator";
 import mailHandler from "../utils/nodemailer.js";
-import { query } from "express";
-import crypto from "crypto";
+
 
 
 const register = async (req, res, next) => {
