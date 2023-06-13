@@ -1,4 +1,4 @@
-import pkg from 'express';
+/*import pkg from 'express';
 const { NextFunction, Request, Response } = pkg;
 
 export class BaseError extends Error {
@@ -67,3 +67,5 @@ const errorHandler = (
 };
 
 export default errorHandler;
+
+*/

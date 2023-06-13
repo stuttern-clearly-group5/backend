@@ -1,10 +1,11 @@
-
 import User from "../model/user.js";
-import errorHandler from "../middleware/error.js";
+//import errorHandler from "../middleware/error.js";
 import bcrypt from "bcryptjs";
 import jwtGen from "../utils/jwtGen.js";
-import e from "express";
-//import sendMail from "../utils/nodemailer.js";
+import otpGenerator from "otp-generator";
+import mailHandler from "../utils/nodemailer.js";
+import { query } from "express";
+import crypto from "crypto";
 
 const register = async (req, res, next) => {
   const { fullname, username, password, email } = req.body;
@@ -20,58 +21,135 @@ const register = async (req, res, next) => {
       const saltRound = 10;
       const salt = await bcrypt.genSalt(saltRound);
       const bcryptPassword = await bcrypt.hash(password, salt);
+      const verificationCode = otpGenerator.generate(4, {
+        digits: true,
+        lowerCaseAlphabets: false,
+        upperCaseAlphabets: false,
+        specialChars: false,
+      });
 
       const newUser = new User({
         fullname,
         username,
         password: bcryptPassword,
         email,
-        //verificationStatus,
-        //confirmationCode,
+        confirmationCode: verificationCode,
       });
-      const token = jwtGen(newUser._id);    
-      if (!token) 
-      return res.status(400).json({ message: "Error Creating User"})
-      await newUser.save()
+      const token = jwtGen(newUser._id);
+      if (!token)
+        return res.status(400).json({ message: "Error Creating User" });
+      const mailDetails = {
+        username: newUser.username,
+        email: newUser.email,
+        confirmationCode: newUser.confirmationCode,
+      };
+      mailHandler({ ...mailDetails });
+      await newUser.save();
       return res
         .status(201)
-        .json({ message: "User created successfully! Please check your email for the confirmation code", token });
+        .json({
+          message:
+            "User created successfully! Please check your email for the confirmation code",
+          token,
+        });
     }
-    /*mailTransporter.sendMail(
-      username,
-      email,
-      confirmationCode
-    );*/  
   } catch (error) {
-    console.log(error)
-    return res.status(400).json(errorHandler(true, "Error Registering"));
+    console.log(error);
+    return res.status(400).json({ message: "Error Registering" });
   }
 };
 
+const statusChange = async (req, res, next) => {
+  const { confirmationCode } = req.body;
+  try {
+    const user = await User.findOne({
+      confirmationCode,
+    }).lean(true);
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid Confirmation Code" });
+    }
+    const updateUser = await User.findOneAndUpdate(
+      {
+        confirmationCode,
+      },
+      { accountStatus: "Active" },
+      { new: true }
+    ).select("-password");
+
+    return res
+      .status(200)
+      .json({ message: "Account Verified", user: updateUser });
+  } catch (error) {
+    return res.status(400).json({ message: "Error Occured while Verifying" });
+  }
+};
 
 const signin = async (req, res, next) => {
-    const { email, password } = req.body;
-    try {
-        const existingUser = await User.findOne({
-            email,
-          }).lean(true);
+  const { email, password } = req.body;
+  try {
+    const existingUser = await User.findOne({
+      email,
+    }).lean(true);
 
-        if (user.status != "Active") {
-        return res.status(401).send({
+    if (user.status === "Pending") {
+      return res.status(401).send({
         message: "Please Verify Your Email before you can Sign In!",
-        });
-  }
-          if(!existingUser) {
-            return res.status(404).json({ message: "User not found"})
-          }
-          const validPassword = await bcrypt.compare(password, existingUser.password)
-          if(!validPassword) return res.status(401).json({message: "Incorrect password"})
-          const token = jwtGen(existingUser._id)
-          return res.status(200).json({ message: 'Sign in successfully', user: {name: existingUser.name, email: existingUser.email}, token})
-    } catch (error) {
-        return res.status(400).json(errorFunction(true, "Error Signing in"));
+      });
     }
+    if (!existingUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const validPassword = await bcrypt.compare(password, existingUser.password);
+    if (!validPassword)
+      return res.status(401).json({ message: "Incorrect password" });
+    const token = jwtGen(existingUser._id);
+    return res
+      .status(200)
+      .json({
+        message: "Sign in successfully",
+        user: { name: existingUser.name, email: existingUser.email },
+        token,
+      });
+  } catch (error) {
+    return res.status(400).json(errorFunction(true, "Error Signing in"));
+  }
+};
+const requestPasswordReset = async (req, res, next) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(403).json({ message: "Email does not exist" });
+    const resetToken = crypto.randomBytes(32).toString("hex");
 
+    const currentDateTime = new Date();
+    const oneHourLater = new Date(currentDateTime.getTime() + 60 * 60 * 1000);
+
+    await User.findOneAndUpdate(
+      { email },
+      {
+        resetToken,
+        tokenExpiryTime: oneHourLater,
+      }
+    );
+
+    const link = `${clientURL}/passwordReset?token=${resetToken}&id=${user._id}`;
+    const mailDetails = {
+      link,
+      email: user.email,
+      fullname: user.fullname
+    };
+    mailHandler({ ...mailDetails });
+    return res.status(200).json({message: "We sent a message to your email"})
+  } catch (error) {
+    return res.status(400).json({message: "Error occured while resetting the password"})
+  }
+
+
+};
+
+const resetPasword = async (req, res, next) => {
+  const { token, id} = req.params;
+  const { password } = req.body;
 }
-
-export { register, signin }
+export { register, signin, statusChange, requestPasswordReset, resetPasword };
