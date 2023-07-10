@@ -17,4 +17,4 @@ app.get('/', (req, res) => {
 
 app.use('/', authRoutes)
 
-app.listen(port, () => console.log(`Express app running on ${port}`))
+app.listen(port, () => console.log(`Express app running on ${port}`));
